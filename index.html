@@ -710,6 +710,86 @@ const FIRST_LINE=[
 ];
 
 // ══════════════════════════════════════════════════
+//  GOOGLE SHEETS LIVE DATA — configure these two lines
+// ══════════════════════════════════════════════════
+
+// Step 1: Paste your Google Sheet ID here.
+// It's the long string in your Sheet URL between /d/ and /edit:
+// https://docs.google.com/spreadsheets/d/THIS_PART_HERE/edit
+const SHEETS_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+
+// Step 2: Set this to true once you have pasted the real ID above.
+const SHEETS_ENABLED = false;
+
+// ── auto-refresh from Sheets on page load ──────────────────
+async function loadFromSheets() {
+  if (!SHEETS_ENABLED || SHEETS_ID === 'YOUR_GOOGLE_SHEET_ID_HERE') return;
+  const base = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json`;
+
+  async function fetchSheet(sheetName) {
+    try {
+      const res = await fetch(`${base}&sheet=${encodeURIComponent(sheetName)}`);
+      const text = await res.text();
+      const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+      const cols = json.table.cols.map(c => c.label);
+      return json.table.rows.map(row =>
+        Object.fromEntries(cols.map((col, i) => [col, row.c[i]?.v ?? '']))
+      );
+    } catch (e) {
+      console.warn(`Sheets tab "${sheetName}" failed:`, e);
+      return null;
+    }
+  }
+
+  // Pull the summary indicators tab
+  const summary = await fetchSheet('02_summary_indicators');
+  if (summary) {
+    const map = Object.fromEntries(summary.map(r => [r['Indicator'], r['Value']]));
+    if (map['Total samples'])          SUMMARY.total           = Number(map['Total samples']);
+    if (map['Samples with growth'])    SUMMARY.growth          = Number(map['Samples with growth']);
+    if (map['Contaminants'])           SUMMARY.contam          = Number(map['Contaminants']);
+    if (map['True pathogen isolates']) SUMMARY.true_path       = Number(map['True pathogen isolates']);
+    if (map['Resistant isolates'])     SUMMARY.resistant       = Number(map['Resistant isolates']);
+    if (map['MDR isolates (≥3 classes)']) SUMMARY.mdr          = Number(map['MDR isolates (≥3 classes)']);
+    if (map['CSF specimens'])          SUMMARY.csf             = Number(map['CSF specimens']);
+    if (map['Blood culture specimens']) SUMMARY.blood          = Number(map['Blood culture specimens']);
+    if (map['Positivity rate (%)'])    SUMMARY.positivity_pct  = Number(map['Positivity rate (%)']);
+    if (map['Contamination rate (%)']) SUMMARY.contam_pct      = Number(map['Contamination rate (%)']);
+    if (map['Resistance rate (%)'])    SUMMARY.resistance_pct  = Number(map['Resistance rate (%)']);
+    if (map['MDR rate (%)'])           SUMMARY.mdr_pct         = Number(map['MDR rate (%)']);
+    if (map['Median TAT (days)'])      SUMMARY.tat_median      = Number(map['Median TAT (days)']);
+    console.log('✅ Summary loaded from Google Sheets');
+  }
+
+  // Pull the monthly trend tab
+  const monthly = await fetchSheet('06_monthly_trend');
+  if (monthly && monthly.length > 0) {
+    MONTHLY.length = 0;
+    monthly.forEach(r => MONTHLY.push({
+      m:           r['Month_Label'] || r['Year_Month'],
+      total:       Number(r['Total_Samples'])        || 0,
+      growth:      Number(r['Samples_With_Growth'])  || 0,
+      pathogens:   Number(r['True_Pathogens'])       || 0,
+      resistant:   Number(r['Resistant_Isolates'])   || 0,
+      rr:          Number(r['Resistance_Rate_Pct'])  || 0,
+      mdr:         Number(r['MDR_Isolates'])         || 0,
+      mdr_rate:    Number(r['MDR_Rate_Pct'])         || 0,
+      contam:      Number(r['Contaminants'])         || 0,
+      contam_pct:  Number(r['Contamination_Rate_Pct']) || 0,
+      no_growth:   Number(r['No_Growth'])            || 0,
+    }));
+    console.log(`✅ Monthly trend loaded: ${MONTHLY.length} months`);
+  }
+
+  // Rebuild all charts with fresh data
+  Object.values(charts).forEach(c => { try { c.destroy() } catch(e) {} });
+  charts = {};
+  buildAllCharts();
+  document.getElementById('lu').textContent =
+    'Live from Sheets · ' + new Date().toLocaleTimeString('en-GB');
+}
+  
+// ══════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════
 const state={region:'',district:'',facility:'',spec:'all',sex:'all',period:'',age:''};
@@ -1178,6 +1258,7 @@ function round1(v){return Math.round(v*10)/10;}
 // ══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
   buildAllCharts();
+  loadFromSheets(); 
   // Pre-populate district/facility dropdowns for filter bar
   const dd=document.getElementById('f-district');
   Object.keys(DIST_REGION).sort().forEach(d=>{
