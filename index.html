@@ -752,7 +752,7 @@ function setSheetsStatus(type, title, msg){
 }
 
 async function loadFromSheets(){
-  if(!SHEETS_ENABLED||SHEETS_ID==='1HHK8O7vPvMa1oUCge4p619P6FifN0tP8IHtTj3oVW28'){
+  if(!SHEETS_ENABLED||SHEETS_ID==='YOUR_GOOGLE_SHEET_ID_HERE'){
     setSheetsStatus('idle','Google Sheets — not connected','Dashboard showing embedded data. Set SHEETS_ID and SHEETS_ENABLED=true in the HTML file.');
     return;
   }
