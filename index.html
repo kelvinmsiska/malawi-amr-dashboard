@@ -757,7 +757,7 @@ async function loadFromSheets(){
     return;
   }
   setSheetsStatus('loading','Google Sheets — connecting…','Fetching data from your Google Sheet…');
-  const base=`https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json`;
+  const base=`https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json&cb=${Date.now()}`;
   async function fetchSheet(name){
     try{
       const res=await fetch(`${base}&sheet=${encodeURIComponent(name)}`);
