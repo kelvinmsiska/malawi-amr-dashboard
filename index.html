@@ -716,14 +716,14 @@ const FIRST_LINE=[
 // Step 1: Paste your Google Sheet ID here.
 // It's the long string in your Sheet URL between /d/ and /edit:
 // https://docs.google.com/spreadsheets/d/THIS_PART_HERE/edit
-const SHEETS_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+const SHEETS_ID = '1HHK8O7vPvMa1oUCge4p619P6FifN0tP8IHtTj3oVW28';
 
 // Step 2: Set this to true once you have pasted the real ID above.
-const SHEETS_ENABLED = false;
+const SHEETS_ENABLED = true;
 
 // ── auto-refresh from Sheets on page load ──────────────────
 async function loadFromSheets() {
-  if (!SHEETS_ENABLED || SHEETS_ID === 'YOUR_GOOGLE_SHEET_ID_HERE') return;
+  if (!SHEETS_ENABLED || SHEETS_ID === '1HHK8O7vPvMa1oUCge4p619P6FifN0tP8IHtTj3oVW28') return;
   const base = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json`;
 
   async function fetchSheet(sheetName) {
